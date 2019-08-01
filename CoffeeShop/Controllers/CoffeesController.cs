@@ -30,14 +30,28 @@ namespace CoffeeShop.Controllers
         }
 
         [HttpGet]
-        public ActionResult<List<Coffee>> Get()
+        public ActionResult<List<Coffee>> Get([FromQuery] string beanType, [FromQuery] string sortBy)
         {
             using (SqlConnection conn = Connection)
             {
+                if (beanType == null)
+                {
+                    beanType = "";
+                }
+
+                if (sortBy == null || sortBy.ToLower() != "beantype")
+                {
+                    sortBy = "id";
+                }
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = "SELECT Id, Title, BeanType FROM Coffee";
+                    cmd.CommandText = @"
+                        SELECT Id, Title, BeanType 
+                        FROM Coffee
+                        WHERE BeanType LIKE '%' +@beanType + '%'";
+                    cmd.Parameters.Add(new SqlParameter("@beanType", beanType));
+                    cmd.Parameters.Add(new SqlParameter("@sorted", sortBy));
                     SqlDataReader reader = cmd.ExecuteReader();
                     List<Coffee> coffees = new List<Coffee>();
 
@@ -141,7 +155,7 @@ BeanType = @beanType
 WHERE Id = @id";
                         cmd.Parameters.Add(new SqlParameter("@title", coffee.Title));
                         cmd.Parameters.Add(new SqlParameter("@beanType", coffee.BeanType));
-                        cmd.Parameters.Add(new SqlParameters("@id", id));
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
 
                         int rowsAffected = cmd.ExecuteNonQuery();
                         if (rowsAffected > 0)
